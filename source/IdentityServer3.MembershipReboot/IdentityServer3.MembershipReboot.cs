@@ -170,10 +170,23 @@ namespace IdentityServer3.MembershipReboot
             return Task.FromResult<AuthenticateResult>(null);
         }
 
-        protected virtual bool ValidateLocalCredentials(string username, string password, SignInMessage message, out TAccount account)
+        protected virtual bool ValidateLocalCredentials( string username, string password, SignInMessage message, out TAccount account)
         {
-            var tenant = String.IsNullOrWhiteSpace(message.Tenant) ? userAccountService.Configuration.DefaultTenant : message.Tenant;
-            return userAccountService.Authenticate(tenant, username, password, out account);
+
+            List<string> acrlist = new List<string>();
+            string tenant;
+            acrlist = message.AcrValues.ToList();
+            var foundtenant = acrlist.Where(s => s.Contains("Tenant")).FirstOrDefault();
+            if (foundtenant != null)
+            {
+                var tenantkey_val = foundtenant.ToString().Split(':').ToArray();
+                tenant = tenantkey_val[1].ToString();
+            }
+            else
+            {
+                tenant = userAccountService.Configuration.DefaultTenant;
+            }
+             return userAccountService.Authenticate(tenant, username, password, out account);
         }
 
         public override async Task AuthenticateExternalAsync(ExternalAuthenticationContext ctx)
